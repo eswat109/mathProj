@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\Record;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -15,7 +17,7 @@ use App\Service\MathService;
 class MainController extends AbstractController
 {
     /**
-     * @Route("/main", name="main", methods = {"GET", "POST"})
+     * @Route("/", name="main", methods = {"GET", "POST"})
      */
     public function index(Request $request): Response
     {
@@ -44,10 +46,26 @@ class MainController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             // data is an array with "name", "email", and "message" keys
             $data = $form->getData();
+            $name = $data['name'];
             $input = $data['input'];
             $type = $data['type'];
-            $output = $mathServ->$type($input);
-            $ans = $ans . $output;
+            $output = 0;
+            try{
+                $output = $mathServ->$type($input);
+
+                $ans = $ans . $output;
+                $em = $this->getDoctrine()->getManager();
+                $record = new Record();
+                $record->setName($name);
+                $record->setInput($input);
+                $record->setType($type);
+                $record->setOutput($output);
+                $em->persist($record);
+                $em->flush();
+            }
+            catch (Exception $e){
+                $ans = 'Wrong input value';
+            }
             //$form->get('output')->setData($output);
             //$data['output'] = $output;
             //return $this->redirectToRoute('main');
